@@ -1,0 +1,40 @@
+OpenShadingLanguage 1.00
+# Compiled by oslc 1.13.0.@PROJECT_VERSION_TWEAK@"dev"
+# options: 
+shader noise
+param	float	frequency	10		%read{0,0} %write{2147483647,-1}
+param	float	amplitude	0.5		%read{4,4} %write{2147483647,-1}
+param	float	offset	0		%read{5,5} %write{2147483647,-1}
+oparam	float	outRoughness	0		%read{7,7} %write{5,8}
+global	point	P	%read{0,0} %write{2147483647,-1}
+local	point	P_scaled	%read{1,1} %write{0,0}
+local	float	noise_val	%read{2,2} %write{1,1}
+const	float	$const1	0.5		%read{2,3} %write{2147483647,-1}
+temp	float	$tmp1	%read{3,3} %write{2,2}
+temp	float	$tmp2	%read{4,4} %write{3,3}
+temp	float	$tmp3	%read{5,5} %write{4,4}
+const	float	$const2	0		%read{8,8} %write{2147483647,-1}
+const	float	$const3	1		%read{7,7} %write{2147483647,-1}
+const	string	$const4	"clamp"		%read{6,6} %write{2147483647,-1}
+temp	float	$tmp4	%read{8,8} %write{7,7}
+code ___main___
+# noise.osl:10
+#     point P_scaled = P * frequency;
+	mul		P_scaled P frequency 	%filename{"noise.osl"} %line{10} %argrw{"wrr"}
+# noise.osl:13
+#     float noise_val = cellnoise(P_scaled);
+	cellnoise	noise_val P_scaled 	%line{13} %argrw{"wr"}
+# noise.osl:17
+#     outRoughness = (noise_val * 0.5 + 0.5) * amplitude + offset;
+	mul		$tmp1 noise_val $const1 	%line{17} %argrw{"wrr"}
+	add		$tmp2 $tmp1 $const1 	%argrw{"wrr"}
+	mul		$tmp3 $tmp2 amplitude 	%argrw{"wrr"}
+	add		outRoughness $tmp3 offset 	%argrw{"wrr"}
+# noise.osl:20
+#     outRoughness = clamp(outRoughness, 0.0, 1.0);
+	functioncall	$const4 9 	%line{20} %argrw{"r"}
+# /opt/pixar/RenderManProServer-26.2/lib/osl/include/stdosl.h:141
+# float  clamp (float x, float minval, float maxval) { return max(min(x,maxval),minval); }
+	min		$tmp4 outRoughness $const3 	%filename{"/opt/pixar/RenderManProServer-26.2/lib/osl/include/stdosl.h"} %line{141} %argrw{"wrr"}
+	max		outRoughness $tmp4 $const2 	%argrw{"wrr"}
+	end

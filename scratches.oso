@@ -1,0 +1,115 @@
+OpenShadingLanguage 1.00
+# Compiled by oslc 1.13.0.@PROJECT_VERSION_TWEAK@"dev"
+# options: 
+shader scratches
+param	float	frequency	100		%read{10,10} %write{2147483647,-1}
+param	float	scratch_width	0.00999999978		%read{17,17} %write{2147483647,-1}
+param	float	depth	-0.00200000009		%read{23,23} %write{2147483647,-1}
+param	float	noise_factor	0.200000003		%read{20,20} %write{2147483647,-1}
+oparam	color	Cout	0 0 0		%read{2147483647,-1} %write{26,26}
+oparam	float	specular	0		%read{2147483647,-1} %write{27,27}
+oparam	float	roughness	0		%read{2147483647,-1} %write{28,28}
+oparam	float	disp	0		%read{2147483647,-1} %write{23,23}
+global	point	P	%read{0,18} %write{2147483647,-1}
+local	float	theta	%read{5,10} %write{3,8}
+local	float	height	%read{2147483647,-1} %write{9,9}
+local	float	stripe_pos	%read{11,15} %write{10,10}
+local	float	cell	%read{12,14} %write{11,11}
+local	float	cell_rand	%read{13,13} %write{12,12}
+local	float	scratch_center	%read{15,15} %write{14,14}
+local	float	dist	%read{17,17} %write{16,16}
+local	float	scratch_mask	%read{22,28} %write{17,22}
+local	float	scratch_noise	%read{20,20} %write{19,19}
+local	color	baseColor	%read{25,26} %write{24,24}
+temp	float	$tmp1	%read{3,3} %write{2,2}
+const	int	$const1	0		%read{0,0} %write{2147483647,-1}
+temp	float	$tmp2	%read{2,2} %write{0,0}
+const	int	$const2	2		%read{1,1} %write{2147483647,-1}
+temp	float	$tmp3	%read{2,2} %write{1,1}
+const	float	$const3	6.28318548		%read{3,3} %write{2147483647,-1}
+const	float	$const4	1		%read{5,27} %write{2147483647,-1}
+const	string	$const5	"mod"		%read{4,4} %write{2147483647,-1}
+temp	float	$tmp4	%read{7,7} %write{6,6}
+temp	float	$tmp5	%read{6,6} %write{5,5}
+temp	float	$tmp6	%read{8,8} %write{7,7}
+const	int	$const6	1		%read{9,9} %write{2147483647,-1}
+const	float	$const7	0.5		%read{13,13} %write{2147483647,-1}
+temp	float	$tmp7	%read{14,14} %write{13,13}
+temp	float	$tmp8	%read{16,16} %write{15,15}
+const	float	$const8	0		%read{17,17} %write{2147483647,-1}
+const	string	$const9	"perlin"		%read{19,19} %write{2147483647,-1}
+const	float	$const10	10		%read{18,18} %write{2147483647,-1}
+temp	point	$tmp9	%read{19,19} %write{18,18}
+temp	float	$tmp10	%read{21,21} %write{20,20}
+temp	float	$tmp11	%read{22,22} %write{21,21}
+const	color	$const11	1 1 1		%read{24,24} %write{2147483647,-1}
+const	float	$const12	0.600000024		%read{25,25} %write{2147483647,-1}
+temp	color	$tmp12	%read{26,26} %write{25,25}
+const	float	$const13	0.300000012		%read{27,27} %write{2147483647,-1}
+const	float	$const14	0.200000003		%read{28,28} %write{2147483647,-1}
+const	float	$const15	0.0500000007		%read{28,28} %write{2147483647,-1}
+code ___main___
+# scratches.osl:13
+#     float theta = atan2(P[0], P[2]) / (2.0 * M_PI); // [-0.5, 0.5]
+	compref		$tmp2 P $const1 	%filename{"scratches.osl"} %line{13} %argrw{"wrr"}
+	compref		$tmp3 P $const2 	%argrw{"wrr"}
+	atan2		$tmp1 $tmp2 $tmp3 	%argrw{"wrr"}
+	div		theta $tmp1 $const3 	%argrw{"wrr"}
+# scratches.osl:14
+#     theta = mod(theta, 1.0); // wrap to [0, 1)
+	functioncall	$const5 9 	%line{14} %argrw{"r"}
+# /opt/pixar/RenderManProServer-26.2/lib/osl/include/stdosl.h:132
+# float  mod (float  a, float  b) { return a - b*floor(a/b); }
+	div		$tmp5 theta $const4 	%filename{"/opt/pixar/RenderManProServer-26.2/lib/osl/include/stdosl.h"} %line{132} %argrw{"wrr"}
+	floor		$tmp4 $tmp5 	%argrw{"wr"}
+	mul		$tmp6 $const4 $tmp4 	%argrw{"wrr"}
+	sub		theta theta $tmp6 	%argrw{"wrr"}
+# scratches.osl:16
+#     float height = P[1]; // vertical axis remains unchanged
+	compref		height P $const6 	%filename{"scratches.osl"} %line{16} %argrw{"wrr"}
+# scratches.osl:19
+#     float stripe_pos = theta * frequency;
+	mul		stripe_pos theta frequency 	%line{19} %argrw{"wrr"}
+# scratches.osl:22
+#     float cell = floor(stripe_pos);
+	floor		cell stripe_pos 	%line{22} %argrw{"wr"}
+# scratches.osl:23
+#     float cell_rand = cellnoise(cell); // jitter center
+	cellnoise	cell_rand cell 	%line{23} %argrw{"wr"}
+# scratches.osl:24
+#     float scratch_center = cell + cell_rand * 0.5;
+	mul		$tmp7 cell_rand $const7 	%line{24} %argrw{"wrr"}
+	add		scratch_center cell $tmp7 	%argrw{"wrr"}
+# scratches.osl:25
+#     float dist = abs(stripe_pos - scratch_center);
+	sub		$tmp8 stripe_pos scratch_center 	%line{25} %argrw{"wrr"}
+	abs		dist $tmp8 	%argrw{"wr"}
+# scratches.osl:28
+#     float scratch_mask = smoothstep(scratch_width, 0.0, dist);
+	smoothstep	scratch_mask scratch_width $const8 dist 	%line{28} %argrw{"wrrr"}
+# scratches.osl:31
+#     float scratch_noise = noise("perlin", P * 10.0);
+	mul		$tmp9 P $const10 	%line{31} %argrw{"wrr"}
+	noise		scratch_noise $const9 $tmp9 	%argrw{"wrr"}
+# scratches.osl:32
+#     scratch_mask *= (1.0 - noise_factor * scratch_noise);
+	mul		$tmp10 noise_factor scratch_noise 	%line{32} %argrw{"wrr"}
+	sub		$tmp11 $const4 $tmp10 	%argrw{"wrr"}
+	mul		scratch_mask scratch_mask $tmp11 	%argrw{"wrr"}
+# scratches.osl:35
+#     disp = depth * scratch_mask;
+	mul		disp depth scratch_mask 	%line{35} %argrw{"wrr"}
+# scratches.osl:38
+#     color baseColor = color(1.0);
+	assign		baseColor $const11 	%line{38} %argrw{"wr"}
+# scratches.osl:39
+#     Cout = mix(baseColor, baseColor * 0.6, scratch_mask);
+	mul		$tmp12 baseColor $const12 	%line{39} %argrw{"wrr"}
+	mix		Cout baseColor $tmp12 scratch_mask 	%argrw{"wrrr"}
+# scratches.osl:42
+#     specular = mix(0.3, 1.0, scratch_mask);
+	mix		specular $const13 $const4 scratch_mask 	%line{42} %argrw{"wrrr"}
+# scratches.osl:43
+#     roughness = mix(0.2, 0.05, scratch_mask);
+	mix		roughness $const14 $const15 scratch_mask 	%line{43} %argrw{"wrrr"}
+	end
