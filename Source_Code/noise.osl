@@ -1,0 +1,22 @@
+//This code is based on the examples provided in the lectures
+shader noise(
+
+    float frequency = 10.0,
+    float amplitude = 0.5,
+    float offset = 0.0,
+    output float outRoughness = 0.0
+)
+{
+  
+    point P_scaled = P * frequency;
+
+   
+    float noise_val = cellnoise(P_scaled);
+
+
+    outRoughness = (noise_val * 0.5 + 0.5) * amplitude + offset;
+
+    
+    outRoughness = clamp(outRoughness, 0.0, 1.0);
+}
+
